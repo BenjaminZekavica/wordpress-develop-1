@@ -222,7 +222,7 @@ function esc_attr__( $text, $domain = 'default' ) {
  * Retrieve the translation of $text and escapes it for safe use in HTML output.
  *
  * If there is no translation, or the text domain isn't loaded, the original text
- * is escaped and returned..
+ * is escaped and returned.
  *
  * @since 2.8.0
  *
@@ -1287,7 +1287,11 @@ function wp_dropdown_languages( $args = array() ) {
 }
 
 /**
- * Checks if current locale is RTL.
+ * Determines whether the current locale is right-to-left (RTL).
+ * 
+ * For more information on this and similar theme functions, check out
+ * the {@link https://developer.wordpress.org/themes/basics/conditional-tags/ 
+ * Conditional Tags} article in the Theme Developer Handbook.
  *
  * @since 3.0.0
  *

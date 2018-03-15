@@ -253,7 +253,7 @@ function wp_generate_attachment_metadata( $attachment_id, $file ) {
 				$sizes[ $s ]['crop'] = $_wp_additional_image_sizes[ $s ]['crop'];
 			} else {
 				// Force thumbnails to be soft crops.
-				if ( ! 'thumbnail' === $s ) {
+				if ( 'thumbnail' !== $s ) {
 					$sizes[ $s ]['crop'] = get_option( "{$s}_crop" );
 				}
 			}
@@ -357,7 +357,7 @@ function wp_read_image_metadata( $file ) {
 		return false;
 	}
 
-	list( , , $sourceImageType ) = getimagesize( $file );
+	list( , , $sourceImageType ) = @getimagesize( $file );
 
 	/*
 	 * EXIF contains a bunch of data we'll probably never need formatted in ways
@@ -386,10 +386,10 @@ function wp_read_image_metadata( $file ) {
 	 * as caption, description etc.
 	 */
 	if ( is_callable( 'iptcparse' ) ) {
-		getimagesize( $file, $info );
+		@getimagesize( $file, $info );
 
 		if ( ! empty( $info['APP13'] ) ) {
-			$iptc = iptcparse( $info['APP13'] );
+			$iptc = @iptcparse( $info['APP13'] );
 
 			// Headline, "A brief synopsis of the caption."
 			if ( ! empty( $iptc['2#105'][0] ) ) {
@@ -555,6 +555,11 @@ function file_is_valid_image( $path ) {
  */
 function file_is_displayable_image( $path ) {
 	$displayable_image_types = array( IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_BMP );
+
+	// IMAGETYPE_ICO is only defined in PHP 5.3+.
+	if ( defined( 'IMAGETYPE_ICO' ) ) {
+		$displayable_image_types[] = IMAGETYPE_ICO;
+	}
 
 	$info = @getimagesize( $path );
 	if ( empty( $info ) ) {

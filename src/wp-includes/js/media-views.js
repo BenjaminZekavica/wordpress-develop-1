@@ -953,9 +953,6 @@ Library = wp.media.controller.State.extend(/** @lends wp.media.controller.Librar
 			}) );
 		}
 
-		this._filterContext();
-		this.get('library').on( 'add', this._filterContext, this );
-
 		this.resetDisplays();
 	},
 
@@ -1155,20 +1152,8 @@ Library = wp.media.controller.State.extend(/** @lends wp.media.controller.Librar
 		if ( view && view.get( mode ) ) {
 			setUserSetting( 'libraryContent', mode );
 		}
-	},
-
-	/**
-	 * Filter out contextually created attachments (e.g. headers, logos, etc.)
-	 *
-	 * @since 4.9.0
-	 */
-	_filterContext: function() {
-		var library = this.get('library');
-
-		library.set( library.filter( function( item ) {
-			return item.get('context') === '';
-		} ) );
 	}
+
 });
 
 // Make selectionSync available on any Media Library state.
@@ -2487,18 +2472,28 @@ var Controller = wp.media.controller,
 	CustomizeImageCropper;
 
 /**
- * wp.media.controller.CustomizeImageCropper
+ * A state for cropping an image in the customizer.
  *
+ * @since 4.3.0
+ *
+ * @constructs wp.media.controller.CustomizeImageCropper
  * @memberOf wp.media.controller
- *
- * A state for cropping an image.
- *
- * @class
- * @augments wp.media.controller.Cropper
- * @augments wp.media.controller.State
- * @augments Backbone.Model
+ * @augments wp.media.controller.CustomizeImageCropper.Cropper
+ * @inheritDoc
  */
 CustomizeImageCropper = Controller.Cropper.extend(/** @lends wp.media.controller.CustomizeImageCropper.prototype */{
+	/**
+	 * Posts the crop details to the admin.
+	 *
+	 * Uses crop measurements when flexible in both directions.
+	 * Constrains flexible side based on image ratio and size of the fixed side.
+	 *
+	 * @since 4.3.0
+	 *
+	 * @param {Object} attachment The attachment to crop.
+	 *
+	 * @returns {$.promise} A jQuery promise that represents the crop image request.
+	 */
 	doCrop: function( attachment ) {
 		var cropDetails = attachment.get( 'cropDetails' ),
 			control = this.get( 'control' ),
@@ -4238,10 +4233,6 @@ Modal = wp.media.View.extend(/** @lends wp.media.view.Modal.prototype */{
 	tagName:  'div',
 	template: wp.template('media-modal'),
 
-	attributes: {
-		tabindex: 0
-	},
-
 	events: {
 		'click .media-modal-backdrop, .media-modal-close': 'escapeHandler',
 		'keydown': 'keydown'
@@ -4253,8 +4244,7 @@ Modal = wp.media.View.extend(/** @lends wp.media.view.Modal.prototype */{
 		_.defaults( this.options, {
 			container: document.body,
 			title:     '',
-			propagate: true,
-			freeze:    true
+			propagate: true
 		});
 
 		this.focusManager = new wp.media.view.FocusManager({
@@ -4309,7 +4299,6 @@ Modal = wp.media.View.extend(/** @lends wp.media.view.Modal.prototype */{
 	 */
 	open: function() {
 		var $el = this.$el,
-			options = this.options,
 			mceEditor;
 
 		if ( $el.is(':visible') ) {
@@ -4322,13 +4311,6 @@ Modal = wp.media.View.extend(/** @lends wp.media.view.Modal.prototype */{
 			this.attach();
 		}
 
-		// If the `freeze` option is set, record the window's scroll position.
-		if ( options.freeze ) {
-			this._freeze = {
-				scrollTop: $( window ).scrollTop()
-			};
-		}
-
 		// Disable page scrolling.
 		$( 'body' ).addClass( 'modal-open' );
 
@@ -4336,7 +4318,7 @@ Modal = wp.media.View.extend(/** @lends wp.media.view.Modal.prototype */{
 
 		// Try to close the onscreen keyboard
 		if ( 'ontouchend' in document ) {
-			if ( ( mceEditor = window.tinymce && window.tinymce.activeEditor )  && ! mceEditor.isHidden() && mceEditor.iframeElement ) {
+			if ( ( mceEditor = window.tinymce && window.tinymce.activeEditor ) && ! mceEditor.isHidden() && mceEditor.iframeElement ) {
 				mceEditor.iframeElement.focus();
 				mceEditor.iframeElement.blur();
 
@@ -4346,7 +4328,8 @@ Modal = wp.media.View.extend(/** @lends wp.media.view.Modal.prototype */{
 			}
 		}
 
-		this.$el.focus();
+		// Set initial focus on the content instead of this view element, to avoid page scrolling.
+		this.$( '.media-modal' ).focus();
 
 		return this.propagate('open');
 	},
@@ -4356,8 +4339,6 @@ Modal = wp.media.View.extend(/** @lends wp.media.view.Modal.prototype */{
 	 * @returns {wp.media.view.Modal} Returns itself to allow chaining
 	 */
 	close: function( options ) {
-		var freeze = this._freeze;
-
 		if ( ! this.views.attached || ! this.$el.is(':visible') ) {
 			return this;
 		}
@@ -4376,11 +4357,6 @@ Modal = wp.media.View.extend(/** @lends wp.media.view.Modal.prototype */{
 		}
 
 		this.propagate('close');
-
-		// If the `freeze` option is set, restore the container's scroll position.
-		if ( freeze ) {
-			$( window ).scrollTop( freeze.scrollTop );
-		}
 
 		if ( options && options.escape ) {
 			this.propagate('escape');
@@ -9158,17 +9134,27 @@ Cropper = View.extend(/** @lends wp.media.view.Cropper.prototype */{
 		imgOptions = _.extend(imgOptions, {
 			parent: this.$el,
 			onInit: function() {
-				this.parent.children().on( 'mousedown touchstart', function( e ){
 
-					if ( e.shiftKey ) {
+				// Store the set ratio.
+				var setRatio = imgSelect.getOptions().aspectRatio;
+
+				// On mousedown, if no ratio is set and the Shift key is down, use a 1:1 ratio.
+				this.parent.children().on( 'mousedown touchstart', function( e ) {
+
+					// If no ratio is set and the shift key is down, use a 1:1 ratio.
+					if ( ! setRatio && e.shiftKey ) {
 						imgSelect.setOptions( {
 							aspectRatio: '1:1'
 						} );
-					} else {
-						imgSelect.setOptions( {
-							aspectRatio: false
-						} );
 					}
+				} );
+
+				this.parent.children().on( 'mouseup touchend', function() {
+
+					// Restore the set ratio.
+					imgSelect.setOptions( {
+						aspectRatio: setRatio ? setRatio : false
+					} );
 				} );
 			}
 		} );
@@ -9368,6 +9354,10 @@ module.exports = EditImage;
 /**
  * wp.media.view.Spinner
  *
+ * Represents a spinner in the Media Library.
+ *
+ * @since 3.9.0
+ *
  * @memberOf wp.media.view
  *
  * @class
@@ -9381,6 +9371,13 @@ var Spinner = wp.media.View.extend(/** @lends wp.media.view.Spinner.prototype */
 	spinnerTimeout: false,
 	delay: 400,
 
+	/**
+	 * Shows the spinner. Delays the visibility by the configured amount.
+	 *
+	 * @since 3.9.0
+	 *
+	 * @return {wp.media.view.Spinner} The spinner.
+	 */
 	show: function() {
 		if ( ! this.spinnerTimeout ) {
 			this.spinnerTimeout = _.delay(function( $el ) {
@@ -9391,6 +9388,13 @@ var Spinner = wp.media.View.extend(/** @lends wp.media.view.Spinner.prototype */
 		return this;
 	},
 
+	/**
+	 * Hides the spinner.
+	 *
+	 * @since 3.9.0
+	 *
+	 * @return {wp.media.view.Spinner} The spinner.
+	 */
 	hide: function() {
 		this.$el.removeClass( 'is-active' );
 		this.spinnerTimeout = clearTimeout( this.spinnerTimeout );
