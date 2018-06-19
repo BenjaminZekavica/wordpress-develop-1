@@ -331,8 +331,20 @@ input[type="checkbox"] {
 		right: 100%;
 	}
 
+	/* The focus-within pseudo selector is not supported in IE/Edge. */
+	.main-navigation ul ul li:focus-within > ul {
+		left: auto;
+		right: 100%;
+	}
+
 	.main-navigation ul li:hover > ul,
 	.main-navigation ul li.focus > ul {
+		left: auto;
+		right: 0.5em;
+	}
+
+	/* The focus-within pseudo selector is not supported in IE/Edge. */
+	.main-navigation ul li:focus-within > ul {
 		left: auto;
 		right: 0.5em;
 	}

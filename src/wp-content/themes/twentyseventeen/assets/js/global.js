@@ -1,4 +1,3 @@
-/* global twentyseventeenScreenReaderText */
 (function( $ ) {
 
 	// Variables and DOM Caching.
@@ -12,7 +11,6 @@
 		$menuScrollDown = $body.find( '.menu-scroll-down' ),
 		$sidebar = $body.find( '#secondary' ),
 		$entryContent = $body.find( '.entry-content' ),
-		$formatQuote = $body.find( '.format-quote blockquote' ),
 		isFrontPage = $body.hasClass( 'twentyseventeen-front-page' ) || $body.hasClass( 'home blog' ),
 		navigationFixedClass = 'site-navigation-fixed',
 		navigationHeight,
@@ -100,11 +98,6 @@
 			$customHeader.css( 'margin-bottom', '0' );
 			$branding.css( 'margin-bottom', '0' );
 		}
-	}
-
-	// Set icon for quotes.
-	function setQuotesIcon() {
-		$( twentyseventeenScreenReaderText.quote ).prependTo( $formatQuote );
 	}
 
 	// Add 'below-entry-meta' class to elements.
@@ -207,7 +200,6 @@
 		}
 
 		adjustHeaderHeight();
-		setQuotesIcon();
 		if ( true === supportsInlineSVG() ) {
 			document.documentElement.className = document.documentElement.className.replace( /(\s*)no-svg(\s*)/, '$1svg$2' );
 		}

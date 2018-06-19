@@ -1322,6 +1322,10 @@ a:hover .nav-title,
 	position: relative;
 }
 
+html[amp] .navigation-top.site-navigation-fixed {
+	display: none;
+}
+
 .navigation-top .wrap {
 	max-width: 1000px;
 	padding: 0;
@@ -1357,6 +1361,7 @@ a:hover .nav-title,
  */
 
 .js .main-navigation ul,
+html[amp] .main-navigation ul,
 .main-navigation .menu-item-has-children > a > .icon,
 .main-navigation .page_item_has_children > a > .icon,
 .main-navigation ul a > .icon {
@@ -1368,7 +1373,8 @@ a:hover .nav-title,
 	padding: 0.75em 1.695em;
 }
 
-.js .main-navigation.toggled-on > div > ul {
+.js .main-navigation.toggled-on > div > ul,
+html[amp] .main-navigation.toggled-on > div > ul {
 	display: block;
 }
 
@@ -1376,7 +1382,7 @@ a:hover .nav-title,
 	padding: 0 0 0 1.5em;
 }
 
-.main-navigation ul ul.toggled-on {
+.main-navigation ul button.toggled-on + ul {
 	display: block;
 }
 
@@ -1427,7 +1433,8 @@ a:hover .nav-title,
 
 /* Display the menu toggle when JavaScript is available. */
 
-.js .menu-toggle {
+.js .menu-toggle,
+html[amp] .menu-toggle {
 	display: block;
 }
 
@@ -1685,7 +1692,9 @@ body:not(.title-tagline-hidden) .site-branding-text {
 }
 
 .has-header-image .custom-header-media img,
+.has-header-image .custom-header-media amp-img > img,
 .has-header-video .custom-header-media video,
+.has-header-video .custom-header-media amp-video > video,
 .has-header-video .custom-header-media iframe {
 	position: fixed;
 	height: auto;
@@ -1729,7 +1738,8 @@ body:not(.title-tagline-hidden) .site-branding-text {
 	top: 62px;
 }
 
-.has-header-image:not(.twentyseventeen-front-page):not(.home) .custom-header-media img {
+.has-header-image:not(.twentyseventeen-front-page):not(.home) .custom-header-media img,
+.has-header-image:not(.twentyseventeen-front-page):not(.home) .custom-header-media amp-img > img {
 	bottom: 0;
 	position: absolute;
 	top: auto;
@@ -1742,9 +1752,12 @@ body:not(.title-tagline-hidden) .site-branding-text {
 /* For browsers that support 'object-fit' */
 @supports ( object-fit: cover ) {
 	.has-header-image .custom-header-media img,
+	.has-header-image .custom-header-media amp-img > img,
 	.has-header-video .custom-header-media video,
+	.has-header-video .custom-header-media amp-video > video,
 	.has-header-video .custom-header-media iframe,
-	.has-header-image:not(.twentyseventeen-front-page):not(.home) .custom-header-media img {
+	.has-header-image:not(.twentyseventeen-front-page):not(.home) .custom-header-media img,
+	.has-header-image:not(.twentyseventeen-front-page):not(.home) .custom-header-media amp-img > img {
 		height: 100%;
 		left: 0;
 		-o-object-fit: cover;
@@ -3487,7 +3500,12 @@ p > object:only-child {
 		margin-left: -1.25em;
 	}
 
-	.site-navigation-fixed.navigation-top {
+	/* Note that adjustHeaderHeight() is irrelevant with this change */
+	html[amp] body:not(.is-front-page-layout) .navigation-top:not(.site-navigation-fixed) {
+		position: static;
+	}
+
+	.navigation-top.site-navigation-fixed {
 		bottom: auto;
 		position: fixed;
 		left: 0;
@@ -3497,6 +3515,13 @@ p > object:only-child {
 		z-index: 7;
 	}
 
+	/* Initial styles that amp-animations for navigationTopShow and navigationTopHide will override */
+	html[amp] .navigation-top.site-navigation-fixed {
+		opacity: 0;
+		transform: translateY( -72px );
+		display: block;
+	}
+
 	.admin-bar .site-navigation-fixed.navigation-top {
 		top: 32px;
 	}
@@ -3504,7 +3529,9 @@ p > object:only-child {
 	/* Main Navigation */
 
 	.js .menu-toggle,
-	.js .dropdown-toggle {
+	.js .dropdown-toggle,
+	html[amp] .menu-toggle,
+	html[amp] .dropdown-toggle {
 		display: none;
 	}
 
@@ -3514,7 +3541,10 @@ p > object:only-child {
 
 	.js .main-navigation ul,
 	.js .main-navigation ul ul,
-	.js .main-navigation > div > ul {
+	.js .main-navigation > div > ul,
+	html[amp] .main-navigation ul,
+	html[amp] .main-navigation ul ul,
+	html[amp] .main-navigation > div > ul {
 		display: block;
 	}
 
@@ -3579,6 +3609,14 @@ p > object:only-child {
 		display: block;
 	}
 
+	/* The :focus-within selector is not recognized by IE/Edge. */
+	.main-navigation ul li.menu-item-has-children:focus-within:before,
+	.main-navigation ul li.menu-item-has-children:focus-within:after,
+	.main-navigation ul li.page_item_has_children:focus-within:before,
+	.main-navigation ul li.page_item_has_children:focus-within:after {
+		display: block;
+	}
+
 	.main-navigation ul li.menu-item-has-children:before,
 	.main-navigation ul li.page_item_has_children:before {
 		border-color: transparent transparent #bbb;
@@ -3596,6 +3634,12 @@ p > object:only-child {
 		right: auto;
 	}
 
+	/* The :focus-within selector is not recognized by IE/Edge. */
+	.main-navigation ul ul li:focus-within > ul {
+		left: 100%;
+		right: auto;
+	}
+
 	.main-navigation ul ul a {
 		padding: 0.75em 1.25em;
 		width: 16em;
@@ -3608,6 +3652,11 @@ p > object:only-child {
 
 	.main-navigation li li:hover,
 	.main-navigation li li.focus {
+		background: #767676;
+	}
+
+	/* The :focus-within selector is not recognized by IE/Edge. */
+	.main-navigation li li:focus-within {
 		background: #767676;
 	}
 
@@ -3628,8 +3677,22 @@ p > object:only-child {
 		color: #fff;
 	}
 
+	/* The :focus-within selector is not recognized by IE/Edge. */
+	.main-navigation li li:focus-within > a,
+	.main-navigation li li a:focus-within,
+	.main-navigation li li.current_page_item a:focus-within,
+	.main-navigation li li.current-menu-item a:focus-within {
+		color: #fff;
+	}
+
 	.main-navigation ul li:hover > ul,
 	.main-navigation ul li.focus > ul {
+		left: 0.5em;
+		right: auto;
+	}
+
+	/* The :focus-within selector is not recognized by IE/Edge. */
+	.main-navigation ul li:focus-within > ul {
 		left: 0.5em;
 		right: auto;
 	}
@@ -3668,6 +3731,14 @@ p > object:only-child {
 	.main-navigation ul ul li.page_item_has_children:hover:before,
 	.main-navigation ul ul li.page_item_has_children.focus:after,
 	.main-navigation ul ul li.page_item_has_children:hover:after {
+		display: none;
+	}
+
+	/* The :focus-within selector is not recognized by IE/Edge. */
+	.main-navigation ul ul li.menu-item-has-children:focus-within:before,
+	.main-navigation ul ul li.menu-item-has-children:focus-within:after,
+	.main-navigation ul ul li.page_item_has_children:focus-within:before,
+	.main-navigation ul ul li.page_item_has_children:focus-within:after {
 		display: none;
 	}
 

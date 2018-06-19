@@ -370,10 +370,14 @@ add_filter( 'excerpt_more', 'twentyseventeen_excerpt_more' );
  * Handles JavaScript detection.
  *
  * Adds a `js` class to the root `<html>` element when JavaScript is detected.
+ * This function is a no-op in AMP since custom JavaScript is not allowed.
  *
  * @since Twenty Seventeen 1.0
  */
 function twentyseventeen_javascript_detection() {
+	if ( twentyseventeen_is_amp() ) {
+		return;
+	}
 	echo "<script>(function(html){html.className = html.className.replace(/\bno-js\b/,'js')})(document.documentElement);</script>\n";
 }
 add_action( 'wp_head', 'twentyseventeen_javascript_detection', 0 );
@@ -406,9 +410,9 @@ function twentyseventeen_colors_css_wrap() {
 add_action( 'wp_head', 'twentyseventeen_colors_css_wrap' );
 
 /**
- * Enqueue scripts and styles.
+ * Enqueue styles.
  */
-function twentyseventeen_scripts() {
+function twentyseventeen_styles() {
 	// Add custom fonts, used in the main stylesheet.
 	wp_enqueue_style( 'twentyseventeen-fonts', twentyseventeen_fonts_url(), array(), null );
 
@@ -429,6 +433,25 @@ function twentyseventeen_scripts() {
 	// Load the Internet Explorer 8 specific stylesheet.
 	wp_enqueue_style( 'twentyseventeen-ie8', get_theme_file_uri( '/assets/css/ie8.css' ), array( 'twentyseventeen-style' ), '1.0' );
 	wp_style_add_data( 'twentyseventeen-ie8', 'conditional', 'lt IE 9' );
+}
+add_action( 'wp_enqueue_scripts', 'twentyseventeen_styles' );
+
+/**
+ * Enqueue scripts.
+ *
+ * This function is a no-op in AMP since custom JavaScript is not allowed. There are AMP-specific solutions provided separately where required,
+ * but otherwise scripts are just skipped because they are no longer necessary.
+ *
+ * - html5: This script is only needed by IE8 and below, which has negligible marketshare now.
+ * - skip-link-focus-fix: Similarly, this script is only needed by IE11 which has a small marketshare, so it is not implemented in AMP.
+ * - navigation: This is implemented in AMP via PHP filters and amp-bind.
+ * - jquery-scrollto: This is implemented in AMP via scrollTo in the runtime.
+ * - global: Sticky nav is implemented in AMP and html/body classes are added in PHP. @todo There is no AMP implementation of belowEntryMetaClass.
+ */
+function twentyseventeen_scripts() {
+	if ( twentyseventeen_is_amp() ) {
+		return;
+	}
 
 	// Load the html5 shiv.
 	wp_enqueue_script( 'html5', get_theme_file_uri( '/assets/js/html5.js' ), array(), '3.7.3' );

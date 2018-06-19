@@ -12,11 +12,30 @@
  * @version 1.0
  */
 
+$classes = array();
+
+// This class will be replaced by 'js' in non-AMP responses via twentyseventeen_javascript_detection().
+$classes[] = 'no-js';
+
+/*
+ * Fixed background images are supported by most browsers. Otherwise, in non-AMP responses this
+ * class is added by supportsFixedBackground() in global.js
+ */
+if ( twentyseventeen_is_amp() ) {
+	$classes[] = 'background-fixed';
+}
+
+/*
+ * SVG is supported by 97.23%+ of browsers, so in AMP it is safe to assume SVG is available.
+ * Otherwise, in non-AMP responses, the np-svg class will be replaced by supportsInlineSVG() in the global.js script.
+ */
+$classes[] = twentyseventeen_is_amp() ? 'svg' : 'no-svg';
+
 ?><!DOCTYPE html>
-<html <?php language_attributes(); ?> class="no-js no-svg">
+<html <?php language_attributes(); ?> class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
 <head>
 <meta charset="<?php bloginfo( 'charset' ); ?>">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1">
 <link rel="profile" href="http://gmpg.org/xfn/11">
 
 <?php wp_head(); ?>
@@ -35,7 +54,35 @@
 				<div class="wrap">
 					<?php get_template_part( 'template-parts/navigation/navigation', 'top' ); ?>
 				</div><!-- .wrap -->
+
+				<?php if ( twentyseventeen_is_amp() ) : ?>
+					<amp-position-observer
+						layout="nodisplay"
+						intersection-ratios="1"
+						on="exit:navigationTopShow.start;enter:navigationTopHide.start"
+						<?php if ( is_admin_bar_showing() ) : ?>
+							viewport-margins="32px 0"
+						<?php endif; ?>
+					></amp-position-observer>
+				<?php endif; ?>
 			</div><!-- .navigation-top -->
+
+			<?php if ( twentyseventeen_is_amp() ) : ?>
+				<div class="navigation-top site-navigation-fixed" aria-hidden="true">
+					<div class="wrap">
+						<nav class="main-navigation">
+							<?php
+							// The twentyseventeen_filter_top_menu_fixed() function filters the output of this wp_nav_menu() call.
+							wp_nav_menu( array(
+								'theme_location' => 'top',
+								'menu_id'        => 'top-menu-fixed',
+							) );
+							?>
+						</nav>
+					</div><!-- .wrap -->
+				</div><!-- #site-navigation-fixed -->
+			<?php endif; ?>
+
 		<?php endif; ?>
 
 	</header><!-- #masthead -->
