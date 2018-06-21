@@ -797,7 +797,7 @@ a:active {
 }
 
 .site-header-menu.toggled-on,
-.no-js .site-header-menu {
+.no-js:not([amp]) .site-header-menu {
 	display: block;
 }
 
@@ -842,11 +842,11 @@ a:active {
 	margin-left: 0.875em;
 }
 
-.no-js .main-navigation ul ul {
+.no-js:not([amp]) .main-navigation ul ul {
 	display: block;
 }
 
-.main-navigation ul .toggled-on {
+.main-navigation ul .toggled-on + ul {
 	display: block;
 }
 
@@ -1641,7 +1641,7 @@ blockquote:after,
 	padding: 0.769230769em;
 }
 
-.no-js .menu-toggle {
+.no-js:not([amp]) .menu-toggle {
 	display: none;
 }
 
@@ -2737,21 +2737,6 @@ p > video {
  */
 
 /**
- * Does the same thing as <meta name="viewport" content="width=device-width">,
- * but in the future W3C standard way. -ms- prefix is required for IE10+ to
- * render responsive styling in Windows 8 "snapped" views; IE10+ does not honor
- * the meta tag. See https://core.trac.wordpress.org/ticket/25888.
- */
-@-ms-viewport {
-	width: device-width;
-}
-
-@viewport {
-	width: device-width;
-}
-
-
-/**
  * 14.1 - >= 710px
  */
 
@@ -3037,6 +3022,11 @@ p > video {
 		color: #007acc;
 	}
 
+	/* The :focus-within selector is not recognized by IE/Edge. */
+	.main-navigation li:focus-within > a {
+		color: #007acc;
+	}
+
 	.main-navigation ul ul {
 		border-bottom: 1px solid #d1d1d1;
 		display: block;
@@ -3093,8 +3083,20 @@ p > video {
 		right: 0;
 	}
 
+	/* The :focus-within selector is not recognized by IE/Edge. */
+	.main-navigation li:focus-within > ul {
+		left: auto;
+		right: 0;
+	}
+
 	.main-navigation ul ul li:hover > ul,
 	.main-navigation ul ul li.focus > ul {
+		left: auto;
+		right: 100%;
+	}
+
+	/* The :focus-within selector is not recognized by IE/Edge. */
+	.main-navigation ul ul li:focus-within > ul {
 		left: auto;
 		right: 100%;
 	}

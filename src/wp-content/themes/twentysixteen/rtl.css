@@ -547,8 +547,20 @@ body:not(.search-results) .entry-summary .alignleft {
 		right: auto;
 	}
 
+	/* The :focus-within selector is not recognized by IE/Edge. */
+	.main-navigation li:focus-within > ul {
+		left: 0;
+		right: auto;
+	}
+
 	.main-navigation ul ul li:hover > ul,
 	.main-navigation ul ul li.focus > ul {
+		left: 100%;
+		right: auto;
+	}
+
+	/* The :focus-within selector is not recognized by IE/Edge. */
+	.main-navigation ul ul li:focus-within > ul {
 		left: 100%;
 		right: auto;
 	}

@@ -229,20 +229,22 @@ endif;
  * Handles JavaScript detection.
  *
  * Adds a `js` class to the root `<html>` element when JavaScript is detected.
+ * This function is a no-op in AMP since custom JavaScript is not allowed.
  *
  * @since Twenty Sixteen 1.0
  */
 function twentysixteen_javascript_detection() {
+	if ( twentysixteen_is_amp() ) {
+		return;
+	}
 	echo "<script>(function(html){html.className = html.className.replace(/\bno-js\b/,'js')})(document.documentElement);</script>\n";
 }
 add_action( 'wp_head', 'twentysixteen_javascript_detection', 0 );
 
 /**
- * Enqueues scripts and styles.
- *
- * @since Twenty Sixteen 1.0
+ * Enqueues styles.
  */
-function twentysixteen_scripts() {
+function twentysixteen_styles() {
 	// Add custom fonts, used in the main stylesheet.
 	wp_enqueue_style( 'twentysixteen-fonts', twentysixteen_fonts_url(), array(), null );
 
@@ -263,6 +265,24 @@ function twentysixteen_scripts() {
 	// Load the Internet Explorer 7 specific stylesheet.
 	wp_enqueue_style( 'twentysixteen-ie7', get_template_directory_uri() . '/css/ie7.css', array( 'twentysixteen-style' ), '20160816' );
 	wp_style_add_data( 'twentysixteen-ie7', 'conditional', 'lt IE 8' );
+}
+add_action( 'wp_enqueue_scripts', 'twentysixteen_styles' );
+
+/**
+ * Enqueues scripts.
+ *
+ * This function is a no-op in AMP since custom JavaScript is not allowed. There are AMP-specific solutions provided separately where required,
+ * but otherwise scripts are just skipped because they are no longer necessary.
+ *
+ * - html5: This script is only needed by IE8 and below, which has negligible marketshare now.
+ * - skip-link-focus-fix: Similarly, this script is only needed by IE11 which has a small marketshare, so it is not implemented in AMP.
+ * - keyboard-image-navigation: AMP does not provide a way to listen to keydown events.
+ * - functions: This largely for nav menus which are implemented in AMP via PHP filters and amp-bind. @todo There is no AMP implementation of belowEntryMetaClass for onResizeARIA.
+ */
+function twentysixteen_scripts() {
+	if ( twentysixteen_is_amp() ) {
+		return;
+	}
 
 	// Load the html5 shiv.
 	wp_enqueue_script( 'twentysixteen-html5', get_template_directory_uri() . '/js/html5.js', array(), '3.7.3' );
@@ -319,6 +339,78 @@ function twentysixteen_body_classes( $classes ) {
 	return $classes;
 }
 add_filter( 'body_class', 'twentysixteen_body_classes' );
+
+/**
+ * Filter the HTML output of a nav menu item to add the AMP dropdown button to reveal the sub-menu.
+ *
+ * This is only used for AMP since in JS it is added via initMainNavigation() in functions.js.
+ *
+ * @param string $item_output   Nav menu item HTML.
+ * @param object $item          Nav menu item.
+ * @param int    $depth         Depth.
+ * @param array  $nav_menu_args Args to wp_nav_menu().
+ * @return string Modified nav menu item HTML.
+ */
+function twentysixteen_add_nav_sub_menu_buttons( $item_output, $item, $depth, $nav_menu_args ) {
+	if ( ! twentysixteen_is_amp() ) {
+		return $item_output;
+	}
+
+	unset( $depth );
+
+	// Skip adding buttons to nav menu widgets for now.
+	if ( empty( $nav_menu_args->theme_location ) ) {
+		return $item_output;
+	}
+
+	if ( ! in_array( 'menu-item-has-children', $item->classes, true ) ) {
+		return $item_output;
+	}
+	static $nav_menu_item_number = 0;
+	$nav_menu_item_number++;
+
+	$expanded = in_array( 'current-menu-ancestor', $item->classes, true );
+
+	$expanded_state_id = 'navMenuItemExpanded' . $nav_menu_item_number;
+
+	// Create new state for managing storing the whether the sub-menu is expanded.
+	$item_output .= sprintf(
+		'<amp-state id="%s"><script type="application/json">%s</script></amp-state>',
+		esc_attr( $expanded_state_id ),
+		wp_json_encode( $expanded )
+	);
+
+	$dropdown_button  = '<button';
+	$dropdown_class   = 'dropdown-toggle';
+	$toggled_class    = 'toggled-on';
+	$dropdown_button .= sprintf(
+		' class="%s" [class]="%s"',
+		esc_attr( $dropdown_class . ( $expanded ? " $toggled_class" : '' ) ),
+		esc_attr( sprintf( "%s + ( $expanded_state_id ? %s : '' )", wp_json_encode( $dropdown_class ), wp_json_encode( " $toggled_class" ) ) )
+	);
+	$dropdown_button .= sprintf(
+		' aria-expanded="%s" [aria-expanded]="%s"',
+		esc_attr( wp_json_encode( $expanded ) ),
+		esc_attr( "$expanded_state_id ? 'true' : 'false'" )
+	);
+	$dropdown_button .= sprintf(
+		' on="%s"',
+		esc_attr( "tap:AMP.setState( { $expanded_state_id: ! $expanded_state_id } )" )
+	);
+	$dropdown_button .= '>';
+
+	$dropdown_button .= sprintf(
+		'<span class="screen-reader-text" [text]="%s">%s</span>',
+		esc_attr( sprintf( "$expanded_state_id ? %s : %s", wp_json_encode( __( 'collapse child menu', 'twentysixteen' ) ), wp_json_encode( __( 'expand child menu', 'twentysixteen' ) ) ) ),
+		esc_html( $expanded ? __( 'collapse child menu', 'twentysixteen' ) : __( 'expand child menu', 'twentysixteen' ) )
+	);
+
+	$dropdown_button .= '</button>';
+
+	$item_output .= $dropdown_button;
+	return $item_output;
+}
+add_filter( 'walker_nav_menu_start_el', 'twentysixteen_add_nav_sub_menu_buttons', 10, 4 );
 
 /**
  * Converts a HEX value to RGB.
@@ -427,8 +519,19 @@ function twentysixteen_widget_tag_cloud_args( $args ) {
 	$args['largest']  = 1;
 	$args['smallest'] = 1;
 	$args['unit']     = 'em';
-	$args['format']   = 'list'; 
+	$args['format']   = 'list';
 
 	return $args;
 }
 add_filter( 'widget_tag_cloud_args', 'twentysixteen_widget_tag_cloud_args' );
+
+/**
+ * Determine whether this is an AMP response.
+ *
+ * Note that this must only be called after the parse_query action.
+ *
+ * @return bool Is AMP endpoint (and AMP plugin is active).
+ */
+function twentysixteen_is_amp() {
+	return function_exists( 'is_amp_endpoint' ) && is_amp_endpoint();
+}

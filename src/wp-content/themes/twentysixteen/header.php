@@ -13,7 +13,7 @@
 <html <?php language_attributes(); ?> class="no-js">
 <head>
 	<meta charset="<?php bloginfo( 'charset' ); ?>">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1">
 	<link rel="profile" href="http://gmpg.org/xfn/11">
 	<?php if ( is_singular() && pings_open( get_queried_object() ) ) : ?>
 	<link rel="pingback" href="<?php bloginfo( 'pingback_url' ); ?>">
@@ -44,9 +44,32 @@
 				</div><!-- .site-branding -->
 
 				<?php if ( has_nav_menu( 'primary' ) || has_nav_menu( 'social' ) ) : ?>
-					<button id="menu-toggle" class="menu-toggle"><?php _e( 'Menu', 'twentysixteen' ); ?></button>
+					<?php if ( twentysixteen_is_amp() ) : ?>
+						<amp-state id="navMenuToggledOn">
+							<script type="application/json">false</script>
+						</amp-state>
+					<?php endif; ?>
 
-					<div id="site-header-menu" class="site-header-menu">
+					<button
+						id="menu-toggle"
+						class="menu-toggle"
+						<?php if ( twentysixteen_is_amp() ) : ?>
+							on="tap:AMP.setState( { navMenuToggledOn: ! navMenuToggledOn } )"
+							[class]="'menu-toggle' + ( navMenuToggledOn ? ' toggled-on' : '' )"
+							aria-expanded="false"
+							[aria-expanded]="navMenuToggledOn ? 'true' : 'false'"
+						<?php endif; ?>
+					>
+						<?php _e( 'Menu', 'twentysixteen' ); ?>
+					</button>
+
+					<div
+						id="site-header-menu"
+						class="site-header-menu"
+						<?php if ( twentysixteen_is_amp() ) : ?>
+							[class]="'site-header-menu' + ( navMenuToggledOn ? ' toggled-on' : '' )"
+						<?php endif; ?>
+					>
 						<?php if ( has_nav_menu( 'primary' ) ) : ?>
 							<nav id="site-navigation" class="main-navigation" role="navigation" aria-label="<?php esc_attr_e( 'Primary Menu', 'twentysixteen' ); ?>">
 								<?php
