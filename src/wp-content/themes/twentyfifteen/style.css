@@ -678,7 +678,7 @@ a:focus {
 	margin-left: 0.8em;
 }
 
-.main-navigation ul .toggled-on {
+.main-navigation ul .toggle-on + ul {
 	display: block;
 }
 
@@ -713,7 +713,7 @@ a:focus {
 	margin-top: 0.5em;
 }
 
-.no-js .main-navigation ul ul {
+.no-js:not([amp]) .main-navigation ul ul {
 	display: block;
 }
 
@@ -2712,20 +2712,6 @@ p > video {
  * 16.0 Media Queries
  */
 
-/*
- * Does the same thing as <meta name="viewport" content="width=device-width">,
- * but in the future W3C standard way. -ms- prefix is required for IE10+ to
- * render responsive styling in Windows 8 "snapped" views; IE10+ does not honor
- * the meta tag. See https://core.trac.wordpress.org/ticket/25888.
- */
-@-ms-viewport {
-	width: device-width;
-}
-
-@viewport {
-	width: device-width;
-}
-
 /**
  * 16.1 Mobile Large 620px
  */
@@ -4141,6 +4127,14 @@ p > video {
 		max-width: 413px;
 		position: relative;
 		width: 29.4118%;
+	}
+
+	/* Attempt to emulate https://github.com/WordPress/wordpress-develop/blob/5e9a39baa7d4368f7d3c36dcbcd53db6317677c9/src/wp-content/themes/twentyfifteen/js/functions.js#L108-L149 */
+	html[amp] .sidebar {
+		position: sticky;
+		top: -9vh;
+		max-height: 109vh;
+		overflow-y: auto;
 	}
 
 	.secondary {

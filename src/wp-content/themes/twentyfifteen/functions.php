@@ -236,20 +236,22 @@ endif;
  * JavaScript Detection.
  *
  * Adds a `js` class to the root `<html>` element when JavaScript is detected.
+ * This function is a no-op in AMP since custom JavaScript is not allowed.
  *
  * @since Twenty Fifteen 1.1
  */
 function twentyfifteen_javascript_detection() {
+	if ( twentyfifteen_is_amp() ) {
+		return;
+	}
 	echo "<script>(function(html){html.className = html.className.replace(/\bno-js\b/,'js')})(document.documentElement);</script>\n";
 }
 add_action( 'wp_head', 'twentyfifteen_javascript_detection', 0 );
 
 /**
- * Enqueue scripts and styles.
- *
- * @since Twenty Fifteen 1.0
+ * Enqueue styles.
  */
-function twentyfifteen_scripts() {
+function twentyfifteen_styles() {
 	// Add custom fonts, used in the main stylesheet.
 	wp_enqueue_style( 'twentyfifteen-fonts', twentyfifteen_fonts_url(), array(), null );
 
@@ -266,6 +268,43 @@ function twentyfifteen_scripts() {
 	// Load the Internet Explorer 7 specific stylesheet.
 	wp_enqueue_style( 'twentyfifteen-ie7', get_template_directory_uri() . '/css/ie7.css', array( 'twentyfifteen-style' ), '20141010' );
 	wp_style_add_data( 'twentyfifteen-ie7', 'conditional', 'lt IE 8' );
+}
+add_action( 'wp_enqueue_scripts', 'twentyfifteen_styles' );
+
+/**
+ * Filter whether to show the admin bar.
+ *
+ * In AMP this is set to false because there is too much CSS in the theme to be
+ * under 50KB when the admin-bar.css is also added to the page.
+ *
+ * @param bool $show Whether to show the admin bar.
+ * @return bool Whether to show the admin bar.
+ */
+function twentyfifteen_show_admin_bar( $show ) {
+	if ( twentyfifteen_is_amp() ) {
+		$show = false;
+	}
+	return $show;
+}
+add_filter( 'show_admin_bar', 'twentyfifteen_show_admin_bar' );
+
+/**
+ * Enqueue scripts.
+ *
+ * This function is a no-op in AMP since custom JavaScript is not allowed. There are AMP-specific solutions provided separately where required,
+ * but otherwise scripts are just skipped because they are no longer necessary.
+ *
+ * - html5: This script is only needed by IE8 and below, which has negligible marketshare now.
+ * - skip-link-focus-fix: Similarly, this script is only needed by IE11 which has a small marketshare, so it is not implemented in AMP.
+ * - keyboard-image-navigation: AMP does not provide a way to listen to keydown events.
+ * - functions: This largely for nav menus which are implemented in AMP via PHP filters and amp-bind. Fixed sidebar is approximated in AMP. @todo There is no AMP implementation of onResizeARIA.
+ *
+ * @since Twenty Fifteen 1.0
+ */
+function twentyfifteen_scripts() {
+	if ( twentyfifteen_is_amp() ) {
+		return;
+	}
 
 	wp_enqueue_script( 'twentyfifteen-skip-link-focus-fix', get_template_directory_uri() . '/js/skip-link-focus-fix.js', array(), '20141010', true );
 
@@ -373,6 +412,89 @@ function twentyfifteen_nav_description( $item_output, $item, $depth, $args ) {
 add_filter( 'walker_nav_menu_start_el', 'twentyfifteen_nav_description', 10, 4 );
 
 /**
+ * Filter the HTML output of a nav menu item to add the AMP dropdown button to reveal the sub-menu.
+ *
+ * This is only used for AMP since in JS it is added via initMainNavigation() in functions.js.
+ *
+ * @param string $item_output   Nav menu item HTML.
+ * @param object $item          Nav menu item.
+ * @param int    $depth         Depth.
+ * @param array  $nav_menu_args Args to wp_nav_menu().
+ * @return string Modified nav menu item HTML.
+ */
+function twentyfifteen_add_nav_sub_menu_buttons( $item_output, $item, $depth, $nav_menu_args ) {
+	if ( ! twentyfifteen_is_amp() ) {
+		return $item_output;
+	}
+
+	unset( $depth );
+
+	// Skip adding buttons to nav menu widgets for now.
+	if ( empty( $nav_menu_args->theme_location ) ) {
+		return $item_output;
+	}
+
+	if ( ! in_array( 'menu-item-has-children', $item->classes, true ) ) {
+		return $item_output;
+	}
+	static $nav_menu_item_number = 0;
+	$nav_menu_item_number++;
+
+	$expanded = in_array( 'current-menu-ancestor', $item->classes, true );
+
+	$expanded_state_id = 'navMenuItemExpanded' . $nav_menu_item_number;
+
+	// Create new state for managing storing the whether the sub-menu is expanded.
+	$item_output .= sprintf(
+		'<amp-state id="%s"><script type="application/json">%s</script></amp-state>',
+		esc_attr( $expanded_state_id ),
+		wp_json_encode( $expanded )
+	);
+
+	$dropdown_button  = '<button';
+	$dropdown_class   = 'dropdown-toggle';
+	$toggled_class    = 'toggle-on';
+	$dropdown_button .= sprintf(
+		' class="%s" [class]="%s"',
+		esc_attr( $dropdown_class . ( $expanded ? " $toggled_class" : '' ) ),
+		esc_attr( sprintf( "%s + ( $expanded_state_id ? %s : '' )", wp_json_encode( $dropdown_class ), wp_json_encode( " $toggled_class" ) ) )
+	);
+	$dropdown_button .= sprintf(
+		' aria-expanded="%s" [aria-expanded]="%s"',
+		esc_attr( wp_json_encode( $expanded ) ),
+		esc_attr( "$expanded_state_id ? 'true' : 'false'" )
+	);
+	$dropdown_button .= sprintf(
+		' on="%s"',
+		esc_attr( "tap:AMP.setState( { $expanded_state_id: ! $expanded_state_id } )" )
+	);
+	$dropdown_button .= '>';
+
+	$dropdown_button .= sprintf(
+		'<span class="screen-reader-text" [text]="%s">%s</span>',
+		esc_attr( sprintf( "$expanded_state_id ? %s : %s", wp_json_encode( __( 'collapse child menu', 'twentyfifteen' ) ), wp_json_encode( __( 'expand child menu', 'twentyfifteen' ) ) ) ),
+		esc_html( $expanded ? __( 'collapse child menu', 'twentyfifteen' ) : __( 'expand child menu', 'twentyfifteen' ) )
+	);
+
+	$dropdown_button .= '</button>';
+
+	$item_output .= $dropdown_button;
+	return $item_output;
+}
+add_filter( 'walker_nav_menu_start_el', 'twentyfifteen_add_nav_sub_menu_buttons', 10, 4 );
+
+/**
+ * Determine whether the sidebar (secondary) is present.
+ *
+ * This replaces the conditional that was in the parent theme's sidebar.php.
+ *
+ * @return bool Whether sidebar is present.
+ */
+function twentyfifteen_has_secondary_sidebar() {
+	return has_nav_menu( 'primary' ) || has_nav_menu( 'social' ) || is_active_sidebar( 'sidebar-1' );
+}
+
+/**
  * Add a `screen-reader-text` class to the search form's submit button.
  *
  * @since Twenty Fifteen 1.0
@@ -404,6 +526,16 @@ function twentyfifteen_widget_tag_cloud_args( $args ) {
 }
 add_filter( 'widget_tag_cloud_args', 'twentyfifteen_widget_tag_cloud_args' );
 
+/**
+ * Determine whether this is an AMP response.
+ *
+ * Note that this must only be called after the parse_query action.
+ *
+ * @return bool Is AMP endpoint (and AMP plugin is active).
+ */
+function twentyfifteen_is_amp() {
+	return function_exists( 'is_amp_endpoint' ) && is_amp_endpoint();
+}
 
 /**
  * Implement the Custom Header feature.

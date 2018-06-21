@@ -48,17 +48,7 @@
 
 	// Enable menu toggle for small screens.
 	( function() {
-		var menu, widgets, social;
 		if ( ! secondary.length || ! button.length ) {
-			return;
-		}
-
-		// Hide button if there are no widgets and the menus are missing or empty.
-		menu    = secondary.find( '.nav-menu' );
-		widgets = secondary.find( '#widget-area' );
-		social  = secondary.find( '#social-navigation' );
-		if ( ! widgets.length && ! social.length && ( ! menu.length || ! menu.children().length ) ) {
-			button.hide();
 			return;
 		}
 

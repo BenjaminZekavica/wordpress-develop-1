@@ -12,7 +12,7 @@
 <html <?php language_attributes(); ?> class="no-js">
 <head>
 	<meta charset="<?php bloginfo( 'charset' ); ?>">
-	<meta name="viewport" content="width=device-width">
+	<meta name="viewport" content="width=device-width, minimum-scale=1">
 	<link rel="profile" href="http://gmpg.org/xfn/11">
 	<link rel="pingback" href="<?php bloginfo( 'pingback_url' ); ?>">
 	<!--[if lt IE 9]>
@@ -42,7 +42,26 @@
 						<p class="site-description"><?php echo $description; ?></p>
 					<?php endif;
 				?>
-				<button class="secondary-toggle"><?php _e( 'Menu and widgets', 'twentyfifteen' ); ?></button>
+
+				<?php if ( twentyfifteen_is_amp() ) : ?>
+					<amp-state id="secondaryToggledOn">
+						<script type="application/json">false</script>
+					</amp-state>
+				<?php endif; ?>
+
+				<?php if ( twentyfifteen_has_secondary_sidebar() ) : ?>
+					<button
+						class="secondary-toggle"
+						<?php if ( twentyfifteen_is_amp() ) : ?>
+							on="tap:AMP.setState( { secondaryToggledOn: ! secondaryToggledOn } )"
+							[class]="'secondary-toggle' + ( secondaryToggledOn ? ' toggled-on' : '' )"
+							aria-expanded="false"
+							[aria-expanded]="secondaryToggledOn ? 'true' : 'false'"
+						<?php endif; ?>
+					>
+						<?php _e( 'Menu and widgets', 'twentyfifteen' ); ?>
+					</button>
+				<?php endif; ?>
 			</div><!-- .site-branding -->
 		</header><!-- .site-header -->
 

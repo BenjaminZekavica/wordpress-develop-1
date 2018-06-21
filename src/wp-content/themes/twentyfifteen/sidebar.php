@@ -7,8 +7,16 @@
  * @since Twenty Fifteen 1.0
  */
 
-if ( has_nav_menu( 'primary' ) || has_nav_menu( 'social' ) || is_active_sidebar( 'sidebar-1' )  ) : ?>
-	<div id="secondary" class="secondary">
+if ( twentyfifteen_has_secondary_sidebar() ) : ?>
+	<div
+		id="secondary"
+		class="secondary"
+		<?php if ( twentyfifteen_is_amp() ) : ?>
+			[class]="'secondary' + ( secondaryToggledOn ? ' toggled-on' : '' )"
+			aria-expanded="false"
+			[aria-expanded]="secondaryToggledOn ? 'true' : 'false'"
+		<?php endif; ?>
+	>
 
 		<?php if ( has_nav_menu( 'primary' ) ) : ?>
 			<nav id="site-navigation" class="main-navigation" role="navigation">
